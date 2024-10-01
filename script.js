@@ -19,34 +19,81 @@ shapeSelect.addEventListener('change', (e) => currentShape = e.target.value);
 colorPicker.addEventListener('input', (e) => currentColor = e.target.value);
 clearButton.addEventListener('click', clearCanvas);
 
-canvas.addEventListener('mousedown', (e) => {
-    startX = e.offsetX;
-    startY = e.offsetY;
-    if (currentShape === 'Text') {
-        addText();
-    } else {
-        drawing = true;
-    }
-});
+canvas.addEventListener('mousedown', startDrawing);
+canvas.addEventListener('mouseup', stopDrawing);
+canvas.addEventListener('mousemove', draw);
 
-canvas.addEventListener('mouseup', (e) => {
+// Touch event listeners for finger drawing on mobile devices
+canvas.addEventListener('touchstart', startTouchDrawing, { passive: false });
+canvas.addEventListener('touchend', stopTouchDrawing, { passive: false });
+canvas.addEventListener('touchmove', drawTouch, { passive: false });
+
+function getMousePosition(e) {
+    return {
+        x: e.offsetX,
+        y: e.offsetY
+    };
+}
+
+function getTouchPosition(e) {
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches[0];
+    return {
+        x: touch.clientX - rect.left,
+        y: touch.clientY - rect.top
+    };
+}
+
+function startDrawing(e) {
+    const pos = getMousePosition(e);
+    startX = pos.x;
+    startY = pos.y;
+    drawing = true;
+}
+
+function stopDrawing(e) {
     if (drawing) {
-        const endX = e.offsetX;
-        const endY = e.offsetY;
-        drawShape(startX, startY, endX, endY, currentShape);
+        const pos = getMousePosition(e);
+        drawShape(startX, startY, pos.x, pos.y, currentShape);
         drawing = false;
     }
-});
+}
 
-canvas.addEventListener('mousemove', (e) => {
+function draw(e) {
     if (drawing && currentShape === 'Freehand') {
-        const endX = e.offsetX;
-        const endY = e.offsetY;
-        drawShape(startX, startY, endX, endY, currentShape);
-        startX = endX;
-        startY = endY;
+        const pos = getMousePosition(e);
+        drawShape(startX, startY, pos.x, pos.y, currentShape);
+        startX = pos.x;
+        startY = pos.y;
     }
-});
+}
+
+function startTouchDrawing(e) {
+    e.preventDefault();
+    const pos = getTouchPosition(e);
+    startX = pos.x;
+    startY = pos.y;
+    drawing = true;
+}
+
+function stopTouchDrawing(e) {
+    e.preventDefault();
+    if (drawing) {
+        const pos = getTouchPosition(e);
+        drawShape(startX, startY, pos.x, pos.y, currentShape);
+        drawing = false;
+    }
+}
+
+function drawTouch(e) {
+    e.preventDefault();
+    if (drawing && currentShape === 'Freehand') {
+        const pos = getTouchPosition(e);
+        drawShape(startX, startY, pos.x, pos.y, currentShape);
+        startX = pos.x;
+        startY = pos.y;
+    }
+}
 
 // Function to draw different shapes
 function drawShape(x1, y1, x2, y2, shape) {
@@ -85,14 +132,4 @@ function drawShape(x1, y1, x2, y2, shape) {
 // Function to clear the canvas
 function clearCanvas() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-}
-
-// Function to add text to the canvas
-function addText() {
-    const text = prompt("Enter your text:");
-    if (text) {
-        ctx.fillStyle = currentColor;
-        ctx.font = "20px Arial";  // You can customize font size and style here
-        ctx.fillText(text, startX, startY);
-    }
 }
